@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIGE Moçambique - Sistema Integrado de Gestão Educacional</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        mz: {
+                            green: '#007A3D',
+                            yellow: '#FCD116',
+                            red: '#CE1126',
+                            black: '#000000',
+                            blue: '#002B49'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-item-active { background-color: rgba(255, 255, 255, 0.15); border-left: 4px solid #FCD116; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased flex h-screen overflow-hidden">
+
+    <!-- BARRA LATERAL (SIDEBAR) -->
+    <aside class="w-64 bg-mz-blue text-white flex flex-col justify-between shrink-0 shadow-xl">
+        <div>
+            <!-- Logo Institucional -->
+            <div class="p-5 flex items-center gap-3 border-b border-slate-700">
+                <div class="w-10 h-10 rounded-full bg-mz-yellow flex items-center justify-center font-bold text-mz-blue text-xl shadow">
+                    🇲🇿
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-wide leading-tight">SIGE</h1>
+                    <p class="text-xs text-slate-300">Moçambique • MINEDH</p>
+                </div>
+            </div>
+
+            <!-- Perfil Ativo Simulado -->
+            <div class="p-4 bg-slate-800/50 border-b border-slate-700">
+                <label class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold block mb-1">Simular Perfil / Nível:</label>
+                <select id="roleSelector" onchange="switchRole(this.value)" class="w-full bg-slate-900 text-xs text-white p-2 rounded border border-slate-700 focus:outline-none focus:border-mz-yellow">
+                    <option value="ministro">1. Ministro / Super Admin (Nacional)</option>
+                    <option value="dped">2. Diretor Provincial (DPED)</option>
+                    <option value="escola_publica">3. Diretor - Escola Pública</option>
+                    <option value="escola_privada" selected>4. Diretor - Escola Privada (SaaS)</option>
+                    <option value="professor">5. Professor (Docente)</option>
+                    <option value="aluno">6. Aluno / Encarregado de Educação</option>
+                </select>
+            </div>
+
+            <!-- Menu de Navegação -->
+            <nav class="p-3 space-y-1 text-sm font-medium">
+                <a href="#" onclick="showTab('dashboard')" id="nav-dashboard" class="sidebar-item-active flex items-center gap-3 px-3 py-2.5 rounded transition hover:bg-white/10">
+                    <i class="fa-solid fa-chart-pie w-5 text-mz-yellow"></i>
+                    <span>Painel Principal</span>
+                </a>
+                
+                <a href="#" onclick="showTab('academico')" id="nav-academico" class="role-restricted flex items-center gap-3 px-3 py-2.5 rounded transition hover:bg-white/10">
+                    <i class="fa-solid fa-graduation-cap w-5 text-slate-300"></i>
+                    <span>Turmas & Alunos (NUET)</span>
+                </a>
+
+                <a href="#" onclick="showTab('avaliacoes')" id="nav-avaliacoes" class="role-student-only flex items-center gap-3 px-3 py-2.5 rounded transition hover:bg-white/10 hidden">
+                    <i class="fa-solid fa-star w-5 text-mz-yellow"></i>
+                    <span>Avaliar Professores (360°)</span>
+                </a>
+
+                <a href="#" onclick="showTab('saas_privado')" id="nav-saas_privado" class="role-private-only flex items-center gap-3 px-3 py-2.5 rounded transition hover:bg-white/10">
+                    <i class="fa-solid fa-building-columns w-5 text-emerald-400"></i>
+                    <span>Módulo Privado (SaaS)</span>
+                </a>
+
+                <a href="#" onclick="showTab('rh_fraude')" id="nav-rh_fraude" class="role-admin-only flex items-center gap-3 px-3 py-2.5 rounded transition hover:bg-white/10">
+                    <i class="fa-solid fa-user-clock w-5 text-slate-300"></i>
+                    <span>RH & Horas Extras</span>
+                </a>
+
+                <a href="#" onclick="showTab('ouvidoria')" id="nav-ouvidoria" class="flex items-center gap-3 px-3 py-2.5 rounded transition hover:bg-white/10">
+                    <i class="fa-solid fa-shield-halved w-5 text-red-400"></i>
+                    <span>Petições & Denúncias</span>
+                </a>
+
+                <a href="#" onclick="showTab('certificados')" id="nav-certificados" class="flex items-center gap-3 px-3 py-2.5 rounded transition hover:bg-white/10">
+                    <i class="fa-solid fa-certificate w-5 text-mz-yellow"></i>
+                    <span>Certificação Digital</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- Footer da Sidebar -->
+        <div class="p-4 border-t border-slate-700 text-xs text-slate-400 flex items-center justify-between">
+            <span>Versão 4.2 Enterprise</span>
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-500" title="Sistema Online"></span>
+        </div>
+    </aside>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+
+        <!-- HEADER DA APLICAÇÃO -->
+        <header class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm">
+            <div class="flex items-center gap-4">
+                <h2 id="pageTitle" class="text-xl font-bold text-slate-800">Painel de Gestão - Escola Privada Maputo</h2>
+                <span id="roleBadge" class="bg-emerald-100 text-emerald-800 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-emerald-300">Escola Privada (SaaS)</span>
+            </div>
+
+            <!-- Busca Global NUET & Usuário -->
+            <div class="flex items-center gap-4">
+                <div class="relative">
+                    <input type="text" placeholder="Buscar por NUET ou Nome..." class="bg-slate-100 border border-slate-300 text-xs rounded-lg pl-8 pr-4 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-mz-blue">
+                    <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-slate-400 text-xs"></i>
+                </div>
+                <div class="flex items-center gap-3 border-l border-slate-200 pl-4">
+                    <div class="w-8 h-8 rounded-full bg-mz-green text-white flex items-center justify-center font-bold text-xs">
+                        EP
+                    </div>
+                    <div class="text-xs">
+                        <p class="font-bold text-slate-700" id="userNameDisplay">Escola Comunitária de Maputo</p>
+                        <p class="text-slate-500" id="userEmailDisplay">direcao@escolamaputo.co.mz</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- ÁREA DE CONTEÚDO DINÂMICO -->
+        <main class="flex-1 overflow-y-auto p-6 space-y-6">
+
+            <!-- TAB 1: DASHBOARD PRINCIPAL -->
+            <div id="tab-dashboard" class="tab-content space-y-6">
+                <!-- Cards de Resumo -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-500 uppercase">Total de Alunos Inscritos</p>
+                            <h3 class="text-2xl font-bold text-slate-800 mt-1" id="kpi-alunos">1,420</h3>
+                            <p class="text-[11px] text-emerald-600 mt-1"><i class="fa-solid fa-arrow-up"></i> +5.4% este ano</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-lg bg-blue-50 text-mz-blue flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-500 uppercase">Taxa Média de Aprovação</p>
+                            <h3 class="text-2xl font-bold text-slate-800 mt-1">84.2%</h3>
+                            <p class="text-[11px] text-emerald-600 mt-1">Meta MINEDH: >75%</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-chart-line"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-500 uppercase">Propinas Arrecadadas (M-Pesa/SIMO)</p>
+                            <h3 class="text-2xl font-bold text-slate-800 mt-1">2.450.000 MT</h3>
+                            <p class="text-[11px] text-red-500 mt-1">8.2% de Inadimplência</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-wallet"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-500 uppercase">Alerta de Horas Extras Docentes</p>
+                            <h3 class="text-2xl font-bold text-slate-800 mt-1">14 Flagged</h3>
+                            <p class="text-[11px] text-amber-600 mt-1">Auditoria de Rendimento</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-lg bg-red-50 text-mz-red flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráficos -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 class="font-bold text-slate-800 text-sm mb-4">Desempenho por Trimestre vs. Meta Nacional</h3>
+                        <canvas id="chartDesempenho" class="max-h-64"></canvas>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 class="font-bold text-slate-800 text-sm mb-4">Métodos de Pagamento de Propinas</h3>
+                        <canvas id="chartPagamentos" class="max-h-64"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: ACADÊMICO & ALUNOS -->
+            <div id="tab-academico" class="tab-content hidden space-y-6">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-slate-800 text-lg">Pauta de Alunos & Lançamento de Notas (MINEDH)</h3>
+                        <button class="bg-mz-green text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-emerald-700 transition">
+                            <i class="fa-solid fa-plus mr-1"></i> Nova Matrícula
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left text-slate-600">
+                            <thead class="bg-slate-50 text-slate-700 uppercase font-semibold border-b">
+                                <tr>
+                                    <th class="p-3">NUET</th>
+                                    <th class="p-3">Nome do Aluno</th>
+                                    <th class="p-3">Classe / Turno</th>
+                                    <th class="p-3">ACS (40%)</th>
+                                    <th class="p-3">ACP (30%)</th>
+                                    <th class="p-3">ACF (30%)</th>
+                                    <th class="p-3">Média Final</th>
+                                    <th class="p-3">Resultado</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr>
+                                    <td class="p-3 font-mono font-bold text-mz-blue">2026-8941-MZ</td>
+                                    <td class="p-3 font-medium text-slate-900">Armando Tembe</td>
+                                    <td class="p-3">10ª Classe - Diurno</td>
+                                    <td class="p-3">14.0</td>
+                                    <td class="p-3">12.0</td>
+                                    <td class="p-3">15.0</td>
+                                    <td class="p-3 font-bold">13.7</td>
+                                    <td class="p-3"><span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">Aprovado</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-mono font-bold text-mz-blue">2026-3312-MZ</td>
+                                    <td class="p-3 font-medium text-slate-900">Beatriz Langa</td>
+                                    <td class="p-3">10ª Classe - Diurno</td>
+                                    <td class="p-3">08.0</td>
+                                    <td class="p-3">09.0</td>
+                                    <td class="p-3">07.0</td>
+                                    <td class="p-3 font-bold">08.0</td>
+                                    <td class="p-3"><span class="bg-red-100 text-red-800 px-2 py-0.5 rounded font-bold">Recorrência</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: AVALIAÇÃO 360 DE PROFESSORES PELO ALUNO -->
+            <div id="tab-avaliacoes" class="tab-content hidden space-y-6">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm max-w-2xl mx-auto">
+                    <h3 class="font-bold text-slate-800 text-lg mb-2">Avaliação de Qualidade Docente (Anónima)</h3>
+                    <p class="text-xs text-slate-500 mb-6">A sua opinião é estritamente confidencial e ajuda a melhorar o ensino na sua escola.</p>
+
+                    <form class="space-y-4 text-xs">
+                        <div>
+                            <label class="font-semibold block mb-1">Selecione o Professor / Disciplina:</label>
+                            <select class="w-full bg-slate-50 border border-slate-300 p-2.5 rounded-lg">
+                                <option>Prof. Mateus Cossa - Matemática (10ª Classe)</option>
+                                <option>Profa. Ana Macamo - Física (10ª Classe)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="font-semibold block mb-1">1. O professor cumpre os horários e assiduidade?</label>
+                            <div class="flex gap-4">
+                                <label><input type="radio" name="q1" class="mr-1"> 1 (Muito Mau)</label>
+                                <label><input type="radio" name="q1" class="mr-1"> 3 (Suficiente)</label>
+                                <label><input type="radio" name="q1" class="mr-1" checked> 5 (Excelente)</label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="font-semibold block mb-1">2. Domínio da matéria e clareza na explicação:</label>
+                            <div class="flex gap-4">
+                                <label><input type="radio" name="q2" class="mr-1"> 1 (Fraco)</label>
+                                <label><input type="radio" name="q2" class="mr-1" checked> 4 (Bom)</label>
+                                <label><input type="radio" name="q2" class="mr-1"> 5 (Excelente)</label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="font-semibold block mb-1">Comentários Adicionais:</label>
+                            <textarea rows="3" placeholder="Escreva aqui sugestões respeitosas..." class="w-full bg-slate-50 border border-slate-300 p-2.5 rounded-lg"></textarea>
+                        </div>
+
+                        <button type="button" onclick="alert('Avaliação submetida com sucesso e encriptada!')" class="bg-mz-green text-white font-bold py-2.5 px-6 rounded-lg">Submeter Avaliação Anónima</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- TAB 4: MÓDULO PRIVADO SAAS -->
+            <div id="tab-saas_privado" class="tab-content hidden space-y-6">
+                <div class="bg-gradient-to-r from-slate-900 to-mz-blue text-white p-6 rounded-xl shadow-lg">
+                    <span class="bg-emerald-500 text-slate-950 font-bold text-[10px] uppercase px-2 py-0.5 rounded">SaaS Multi-Tenant Commercial</span>
+                    <h3 class="text-2xl font-bold mt-2">Plataforma de Gestão Comercial para Escolas Privadas</h3>
+                    <p class="text-xs text-slate-300 mt-1">Automatização de propinas via M-Pesa/SIMO, portal com marca própria (White-Label) e currículos internacionais.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm text-center">
+                        <i class="fa-solid fa-mobile-retro text-3xl text-emerald-600 mb-2"></i>
+                        <h4 class="font-bold text-sm">Cobrança M-Pesa & e-Mola</h4>
+                        <p class="text-xs text-slate-500 mt-1">Envio automático de avisos de faturação por SMS e conciliação instantânea.</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm text-center">
+                        <i class="fa-solid fa-globe text-3xl text-mz-blue mb-2"></i>
+                        <h4 class="font-bold text-sm">Currículos Cambridge / IB</h4>
+                        <p class="text-xs text-slate-500 mt-1">Suporte simultâneo ao sistema de notas moçambicano e internacional.</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm text-center">
+                        <i class="fa-solid fa-palette text-3xl text-amber-500 mb-2"></i>
+                        <h4 class="font-bold text-sm">Subdomínio & Marca Própria</h4>
+                        <p class="text-xs text-slate-500 mt-1">Sua escola com portal próprio: `suaescola.sige.co.mz` com cores institucionais.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: AUDITORIA RH & HORAS EXTRAS -->
+            <div id="tab-rh_fraude" class="tab-content hidden space-y-6">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-800 text-lg mb-2">Auditoria Automática de Horas Extras & Desempenho Docente</h3>
+                    <p class="text-xs text-slate-500 mb-4">O motor de IA cruza as horas extras solicitadas com a assiduidade biométrica e a taxa de aprovação das turmas do professor.</p>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left text-slate-600">
+                            <thead class="bg-slate-50 text-slate-700 uppercase font-semibold border-b">
+                                <tr>
+                                    <th class="p-3">Professor</th>
+                                    <th class="p-3">Horas Extras Solicitadas</th>
+                                    <th class="p-3">Assiduidade</th>
+                                    <th class="p-3">Rendimento da Turma</th>
+                                    <th class="p-3">Status do Pagamento</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr class="bg-red-50/50">
+                                    <td class="p-3 font-bold text-slate-900">Prof. Tomé Sitoe</td>
+                                    <td class="p-3 font-bold text-mz-red">42 Horas</td>
+                                    <td class="p-3 text-red-600">65% (12 Faltas)</td>
+                                    <td class="p-3">41.2% Aprovação</td>
+                                    <td class="p-3"><span class="bg-red-200 text-red-900 px-2 py-0.5 rounded font-bold"><i class="fa-solid fa-ban"></i> Bloqueado para Auditoria</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-bold text-slate-900">Profa. Maria Nhantumbo</td>
+                                    <td class="p-3">12 Horas</td>
+                                    <td class="p-3 text-emerald-600">98% Assídua</td>
+                                    <td class="p-3">89.0% Aprovação</td>
+                                    <td class="p-3"><span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold"><i class="fa-solid fa-check"></i> Aprovado</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 6: PETIÇÕES & OUVIDORIA -->
+            <div id="tab-ouvidoria" class="tab-content hidden space-y-6">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm max-w-2xl mx-auto">
+                    <h3 class="font-bold text-slate-800 text-lg mb-1">Canal Seguro de Petições & Denúncias (Ouvidoria)</h3>
+                    <p class="text-xs text-slate-500 mb-6">Canal direto para revisão de provas, sugestões ou denúncias anónimas com encriptação de ponta-a-ponta.</p>
+
+                    <form class="space-y-4 text-xs">
+                        <div>
+                            <label class="font-semibold block mb-1">Tipo de Submissão:</label>
+                            <select class="w-full bg-slate-50 border border-slate-300 p-2.5 rounded-lg">
+                                <option>Petição Acadêmica (Revisão de Nota / Faltas) - Identificada</option>
+                                <option>Denúncia Anónima (Assédio / Cobrança Ilícita / Irregularidade)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="font-semibold block mb-1">Descrição Detalhada do Facto:</label>
+                            <textarea rows="4" placeholder="Descreva os fatos com clareza..." class="w-full bg-slate-50 border border-slate-300 p-2.5 rounded-lg"></textarea>
+                        </div>
+
+                        <button type="button" onclick="alert('Petição/Denúncia registrada com sucesso! Código de Rastreio: MZ-2026-X99')" class="bg-mz-blue text-white font-bold py-2.5 px-6 rounded-lg">Submeter Documento</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- TAB 7: CERTIFICAÇÃO DIGITAL -->
+            <div id="tab-certificados" class="tab-content hidden space-y-6">
+                <div class="bg-white p-8 rounded-xl border-2 border-slate-300 shadow-lg max-w-3xl mx-auto text-center space-y-4 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-3 bg-gradient-to-r from-mz-green via-mz-yellow to-mz-red"></div>
+                    
+                    <div class="w-16 h-16 mx-auto bg-mz-yellow rounded-full flex items-center justify-center text-2xl shadow">🇲🇿</div>
+                    <h2 class="text-lg font-bold uppercase tracking-wider text-slate-800">República de Moçambique<br><span class="text-xs text-slate-500 font-normal">Ministério da Educação e Desenvolvimento Humano</span></h2>
+                    
+                    <h3 class="text-2xl font-serif font-bold text-mz-blue mt-4">CERTIFICADO DE HABILITAÇÕES LITERÁRIAS</h3>
+                    
+                    <p class="text-xs text-slate-600 leading-relaxed max-w-xl mx-auto">
+                        Certifica-se que <strong class="text-slate-900">BEATRIZ LANGA</strong>, titular do NUET <strong class="text-slate-900">2026-3312-MZ</strong>, concluiu com sucesso a <strong class="text-slate-900">12ª Classe do Ensino Secundário Geral</strong> no ano lectivo de 2026 com Média Final de <strong class="text-slate-900">15.4 Valores</strong>.
+                    </p>
+
+                    <div class="pt-6 border-t border-slate-200 flex justify-between items-center text-left text-[10px] text-slate-500">
+                        <div>
+                            <p><strong>Hash de Verificação:</strong> 8f9a2b7c4e1d6a3f</p>
+                            <p><strong>Emitido em:</strong> Maputo, 10 de Novembro de 2026</p>
+                        </div>
+                        <div class="w-20 h-20 bg-slate-100 border border-slate-300 rounded flex items-center justify-center text-center font-mono text-[8px] text-slate-400">
+                            [ QR-CODE<br>VALIDAÇÃO ]
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- JAVASCRIPT DE INTERATIVIDADE E TROCA DE PERFIS -->
+    <script>
+        // Função de Troca de Abas
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('nav a').forEach(el => el.classList.remove('sidebar-item-active'));
+            
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            document.getElementById('nav-' + tabId).classList.add('sidebar-item-active');
+        }
+
+        // Função de Controle de Permissões (RBAC)
+        function switchRole(role) {
+            const title = document.getElementById('pageTitle');
+            const badge = document.getElementById('roleBadge');
+            const user = document.getElementById('userNameDisplay');
+            const email = document.getElementById('userEmailDisplay');
+            
+            // Ocultar menus restritos por padrão
+            document.querySelectorAll('.role-student-only').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.role-private-only').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.role-restricted').forEach(el => el.classList.remove('hidden'));
+
+            if (role === 'ministro') {
+                title.innerText = 'Gabinete do Ministro - Visão Nacional';
+                badge.innerText = 'Super Admin Nacional';
+                user.innerText = 'Ministério da Educação (MINEDH)';
+                email.innerText = 'gabinete@minedh.gov.mz';
+            } else if (role === 'escola_privada') {
+                title.innerText = 'Painel de Gestão - Escola Privada Maputo';
+                badge.innerText = 'Escola Privada (SaaS)';
+                document.querySelectorAll('.role-private-only').forEach(el => el.classList.remove('hidden'));
+                user.innerText = 'Escola Comunitária de Maputo';
+                email.innerText = 'direcao@escolamaputo.co.mz';
+            } else if (role === 'aluno') {
+                title.innerText = 'Portal do Estudante - Minhas Notas & Propinas';
+                badge.innerText = 'Aluno / Encarregado';
+                document.querySelectorAll('.role-restricted').forEach(el => el.classList.add('hidden'));
+                document.querySelectorAll('.role-student-only').forEach(el => el.classList.remove('hidden'));
+                user.innerText = 'Beatriz Langa';
+                email.innerText = 'beatriz.3312@aluno.sige.co.mz';
+                showTab('academico');
+                return;
+            }
+
+            showTab('dashboard');
+        }
+
+        // Inicializar Gráficos Chart.js
+        window.onload = function() {
+            // Gráfico de Desempenho
+            const ctx1 = document.getElementById('chartDesempenho').getContext('2d');
+            new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: ['1º Trimestre', '2º Trimestre', '3º Trimestre (Atual)'],
+                    datasets: [{
+                        label: 'Média de Aprovação (%)',
+                        data: [78.2, 81.5, 84.2],
+                        borderColor: '#007A3D',
+                        backgroundColor: 'rgba(0, 122, 61, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // Gráfico de Pagamentos
+            const ctx2 = document.getElementById('chartPagamentos').getContext('2d');
+            new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['M-Pesa (Vodacom)', 'e-Mola (Movitel)', 'SIMO / Cartão Bancário', 'Pendentes'],
+                    datasets: [{
+                        data: [55, 25, 12, 8],
+                        backgroundColor: ['#E60000', '#FF6600', '#002B49', '#CBD5E1']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        };
+    </script>
+</body>
+</html>
